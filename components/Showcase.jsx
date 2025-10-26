@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect, useRef, useState } from "react";
 
@@ -51,53 +50,37 @@ function Slider({
   const videoRef = useRef(null);
   const boxRef = useRef(null);
 
-  // pointer events
+  // drag с Pointer Events (охватывает и мышь, и touch)
   useEffect(() => {
     const el = boxRef.current;
     if (!el) return;
-    let active = false;
-    const getPct = (clientX) => {
-      const r = el.getBoundingClientRect();
-      const pct = ((clientX - r.left) / r.width) * 100;
-      return Math.min(100, Math.max(0, pct));
-    };
-    const onDown = (e) => {
-      active = true;
-      const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
-      setX(getPct(cx));
-    };
-    const onMove = (e) => {
-      if (!active) return;
-      const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
-      setX(getPct(cx));
-      e.preventDefault();
-    };
-    const onUp = () => (active = false);
 
-    el.addEventListener("mousedown", onDown);
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-    el.addEventListener("touchstart", onDown, { passive: false });
-    window.addEventListener("touchmove", onMove, { passive: false });
-    window.addEventListener("touchend", onUp);
+    let active = false;
+    const pct = (clientX) => {
+      const r = el.getBoundingClientRect();
+      return Math.min(100, Math.max(0, ((clientX - r.left) / r.width) * 100));
+    };
+
+    const onDown = (e) => { active = true; setX(pct(e.clientX)); };
+    const onMove = (e) => { if (!active) return; setX(pct(e.clientX)); e.preventDefault(); };
+    const onUp = () => { active = false; };
+
+    el.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
 
     return () => {
-      el.removeEventListener("mousedown", onDown);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-      el.removeEventListener("touchstart", onDown);
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("touchend", onUp);
+      el.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
     };
   }, []);
 
-  // lazy init video when in viewport
+  // ленивая инициализация видео
   useEffect(() => {
     const el = boxRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), {
-      rootMargin: "200px",
-    });
+    const io = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: "200px" });
     io.observe(el);
     return () => io.disconnect();
   }, []);
@@ -117,7 +100,6 @@ function Slider({
   return (
     <div className="relative group rounded-3xl overflow-hidden border border-slate-200/80 bg-white/80 backdrop-blur select-none">
       <Frame ratio={ratio} boxRef={boxRef}>
-        {/* BEFORE */}
         <ImgFallback
           src={before}
           fallback={fbBefore || "/demo_before_bw.jpg"}
@@ -125,7 +107,6 @@ function Slider({
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
 
-        {/* AFTER */}
         <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - x}% 0 0)` }}>
           {afterVideo && !videoError ? (
             <>
@@ -155,7 +136,6 @@ function Slider({
           )}
         </div>
 
-        {/* mute button */}
         {afterVideo && !videoError && (
           <button
             onClick={toggleMute}
@@ -168,19 +148,16 @@ function Slider({
           </button>
         )}
 
-        {/* divider */}
         <div
           className="absolute top-0 bottom-0 w-px bg-white/80 shadow"
           style={{ left: `${x}%`, transform: "translateX(-0.5px)" }}
           aria-hidden="true"
         />
 
-        {/* handle */}
         <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `${x}%` }}>
           <div className="-translate-x-1/2 p-2 rounded-full bg-blue-500 text-white text-xs shadow">⇆</div>
         </div>
 
-        {/* range */}
         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-2/3">
           <input
             aria-label="Слайдер сравнения"
@@ -193,7 +170,6 @@ function Slider({
           />
         </div>
 
-        {/* label */}
         <div className="absolute inset-x-1 bottom-1 pointer-events-none">
           <div className="mx-auto w-full rounded-xl bg-white/80 text-slate-900 backdrop-blur-sm border border-white/30 shadow px-1 py-1">
             <span className="block text-center text-[10px] sm:text-sm font-medium leading-tight">{label}</span>

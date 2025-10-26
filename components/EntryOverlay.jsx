@@ -1,22 +1,33 @@
 "use client";
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import BrandLogo from "./BrandLogo";
 
 export default function EntryOverlay({
   onEnter,
-  audioSrc = "/sounds/enter.mp3", // положи файл сюда
+  audioSrc = "/sounds/enter.mp3",
 }) {
   const playedRef = useRef(false);
+  const [isReady, setIsReady] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    // Предзагружаем аудио файл
+    if (audioSrc) {
+      audioRef.current = new Audio(audioSrc);
+      audioRef.current.load();
+    }
+    // Активируем кнопку после короткой задержки
+    const timer = setTimeout(() => setIsReady(true), 800);
+    return () => clearTimeout(timer);
+  }, [audioSrc]);
 
   const handleEnter = async () => {
-    // играем звук ТОЛЬКО по клику (чтобы не блочили браузеры)
-    if (audioSrc && !playedRef.current) {
+    if (audioSrc && !playedRef.current && audioRef.current) {
       try {
-        const a = new Audio(audioSrc);
-        await a.play();
+        await audioRef.current.play();
         playedRef.current = true;
       } catch {
-        // если не получилось — просто продолжаем вход
+        // если не получилось — продолжаем вход
       }
     }
     onEnter?.();
@@ -44,9 +55,14 @@ export default function EntryOverlay({
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={handleEnter}
-            className="px-7 py-3 rounded-2xl font-semibold text-slate-900 bg-gradient-to-r from-sky-300 to-sky-500 hover:from-sky-200 hover:to-sky-400 transition shadow-[0_10px_30px_rgba(56,189,248,.35)]"
+            disabled={!isReady}
+            className={`px-7 py-3 rounded-2xl font-semibold text-slate-900 transition ${
+              isReady 
+                ? "bg-gradient-to-r from-sky-300 to-sky-500 hover:from-sky-200 hover:to-sky-400 shadow-[0_10px_30px_rgba(56,189,248,.35)]"
+                : "bg-gradient-to-r from-slate-300 to-slate-400 cursor-not-allowed opacity-75"
+            }`}
           >
-            Вход
+            {isReady ? "Вход" : "Загрузка..."}
           </button>
 
           {/* запасная тихая ссылка без звука, если вдруг нужно */}
