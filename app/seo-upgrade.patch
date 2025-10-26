@@ -1,0 +1,284 @@
+diff --git a/components/SEOJsonLd.jsx b/components/SEOJsonLd.jsx
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/components/SEOJsonLd.jsx
+@@ -0,0 +1,17 @@
++"use client";
++// Универсальный вставщик JSON-LD
++export default function SEOJsonLd({ data }) {
++  if (!data) return null;
++  let json = "";
++  try {
++    json = JSON.stringify(data);
++  } catch {
++    return null;
++  }
++  return (
++    <script
++      type="application/ld+json"
++      dangerouslySetInnerHTML={{ __html: json }}
++    />
++  );
++}
+diff --git a/app/robots.js b/app/robots.js
+new file mode 100644
+index 0000000..2222222
+--- /dev/null
++++ b/app/robots.js
+@@ -0,0 +1,12 @@
++export default function robots() {
++  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://aimemories.ru";
++  return {
++    rules: [{ userAgent: "*", allow: "/" }],
++    sitemap: `${base}/sitemap.xml`,
++    host: base,
++  };
++}
+diff --git a/app/sitemap.js b/app/sitemap.js
+new file mode 100644
+index 0000000..3333333
+--- /dev/null
++++ b/app/sitemap.js
+@@ -0,0 +1,16 @@
++export default async function sitemap() {
++  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://aimemories.ru";
++  return [
++    { url: `${base}/`, changefreq: "weekly", priority: 1.0 },
++    { url: `${base}/animate`, changefreq: "monthly", priority: 0.8 },
++    { url: `${base}/song`, changefreq: "monthly", priority: 0.8 },
++    { url: `${base}/restoration`, changefreq: "monthly", priority: 0.8 },
++    { url: `${base}/enhance`, changefreq: "monthly", priority: 0.8 },
++  ];
++}
+diff --git a/app/page.jsx b/app/page.jsx
+index eeeeeee..4444444 100644
+--- a/app/page.jsx
++++ b/app/page.jsx
+@@ -1,14 +1,15 @@
+ "use client";
+ export const dynamic = "force-dynamic";
+ 
+ import { useEffect, useState } from "react";
++import SEOJsonLd from "../components/SEOJsonLd";
+ 
+ import BackgroundFX from "../components/BackgroundFX";
+ import EntryOverlay from "../components/EntryOverlay";
+-import LogoNeon from "../components/LogoNeon";
+ import BeforeAfterHero from "../components/BeforeAfterHero";
+ import Showcase from "../components/Showcase";
+ import TwoWorksVideo from "../components/TwoWorksVideo";
+ import Songs from "../components/Songs";
+ import WhatsAppButton from "../components/WhatsAppButton";
+ 
+ import Stats from "../components/Stats";
+@@ -21,6 +22,7 @@ import HowToOrder from "../components/HowToOrder";
+ import FAQ from "../components/FAQ";
+ import BrandLogo from "../components/BrandLogo";
+ 
+ export default function Page() {
+   const [entered, setEntered] = useState(false);
+ 
+@@ -37,6 +39,68 @@ export default function Page() {
+   const tracks = [
+     { title: "Ромашковая любовь", src: "/songs/song1.mp3" },
+     { title: "Светлые дни", src: "/songs/song2.mp3" },
+     { title: "Дорога домой", src: "/songs/song3.mp3" },
+   ];
++
++  // ---------- JSON-LD блоки ----------
++  const orgLd = {
++    "@context": "https://schema.org",
++    "@type": "Organization",
++    "name": "AI Memories",
++    "url": "https://aimemories.ru",
++    "logo": "https://aimemories.ru/opengraph-image.jpg",
++    "contactPoint": [{
++      "@type":"ContactPoint",
++      "telephone":"+7-984-193-37-92",
++      "contactType":"customer support",
++      "areaServed":"RU"
++    }]
++  };
++
++  const siteLd = {
++    "@context": "https://schema.org",
++    "@type": "WebSite",
++    "url": "https://aimemories.ru",
++    "name": "AI Memories",
++    "potentialAction": {
++      "@type": "SearchAction",
++      "target": "https://aimemories.ru/?q={search_term_string}",
++      "query-input": "required name=search_term_string"
++    }
++  };
++
++  const faqLd = {
++    "@context": "https://schema.org",
++    "@type": "FAQPage",
++    "mainEntity": [
++      {
++        "@type": "Question",
++        "name": "Сколько времени занимает оживление фото?",
++        "acceptedAnswer": { "@type": "Answer", "text": "Обычно 1–2 дня. Срочно — по договорённости." }
++      },
++      {
++        "@type": "Question",
++        "name": "Можно ли заказать оригинальную песню?",
++        "acceptedAnswer": { "@type": "Answer", "text": "Да, напишу под вашу историю и голос." }
++      },
++      {
++        "@type": "Question",
++        "name": "В каком формате получу ролик?",
++        "acceptedAnswer": { "@type": "Answer", "text": "MP4, 1080×1920 (вертикально) или 1920×1080." }
++      }
++    ]
++  };
++
++  const videoLd = {
++    "@context": "https://schema.org",
++    "@type": "VideoObject",
++    "name": "Оживление фото — пример работы",
++    "description": "Как статичное фото превращается в эмоциональный ролик.",
++    "thumbnailUrl": ["https://aimemories.ru/works/videos/review_01_poster.jpg"],
++    "uploadDate": "2025-10-20",
++    "contentUrl": "https://aimemories.ru/works/videos/review_01.mp4",
++    "embedUrl": "https://aimemories.ru/",
++    "duration": "PT30S"
++  };
++
++  const audioLd = tracks.map(t => ({
++    "@context": "https://schema.org",
++    "@type": "AudioObject",
++    "name": t.title,
++    "contentUrl": `https://aimemories.ru${t.src}`,
++    "encodingFormat": "audio/mpeg"
++  }));
+ 
+   return (
+     <div className="relative min-h-screen">
+       <BackgroundFX />
+@@ -53,7 +117,6 @@ export default function Page() {
+         {/* Шапка */}
+         <header className="text-center reveal">
+           <BrandLogo size={160} withWordmark />
+-          {/* <LogoNeon size={180} subtitle /> */}
+           <p className="text-slate-700 mt-4 max-w-2xl mx-auto">
+             Оживлю ваши фото и соберу трогательное видео-историю. Бесплатный тест — «Оживить фото».
+           </p>
+@@ -111,6 +174,17 @@ export default function Page() {
+         <FAQ />
+ 
+         {/* Подвал */}
+         <footer className="text-slate-600 reveal pt-8 pb-16 text-center">
+           <p>
+             Почта: <a className="text-sky-700" href="mailto:info@aimemories.ru">info@aimemories.ru</a>
+           </p>
+           <p>
+             WhatsApp: <a className="text-sky-700" href="https://wa.me/79841933792">+7 984 193-37-92</a>
+           </p>
+           <p className="mt-2 text-xs">© {new Date().getFullYear()} AI Memories</p>
+         </footer>
++
++        {/* JSON-LD вставки */}
++        <SEOJsonLd data={orgLd} />
++        <SEOJsonLd data={siteLd} />
++        <SEOJsonLd data={faqLd} />
++        <SEOJsonLd data={videoLd} />
++        {audioLd.map((d, i) => <SEOJsonLd key={i} data={d} />)}
+       </section>
+     </div>
+   );
+ }
+diff --git a/app/song/page.jsx b/app/song/page.jsx
+new file mode 100644
+index 0000000..5555555
+--- /dev/null
++++ b/app/song/page.jsx
+@@ -0,0 +1,51 @@
++"use client";
++import SEOJsonLd from "../../components/SEOJsonLd";
++
++export default function SongPage() {
++  const ld = {
++    "@context": "https://schema.org",
++    "@type": "Service",
++    "name": "Песня на заказ",
++    "provider": { "@type": "Organization", "name": "AI Memories" },
++    "areaServed": "RU",
++    "url": "https://aimemories.ru/song"
++  };
++  return (
++    <main className="container py-12 space-y-6">
++      <h1 className="text-3xl md:text-4xl font-semibold">Песня на заказ</h1>
++      <p>Напишу и запишу песню под вашу историю: годовщина, свадьба, юбилей или «просто так».</p>
++      <ul className="list-disc pl-6 text-slate-700">
++        <li>Текст по вашим тезисам</li>
++        <li>Аранжировка в нужном стиле</li>
++        <li>Сведение и мастеринг</li>
++      </ul>
++      <a className="btn" href="https://wa.me/79841933792">Обсудить в WhatsApp</a>
++      <SEOJsonLd data={ld} />
++    </main>
++  );
++}
+diff --git a/app/restoration/page.jsx b/app/restoration/page.jsx
+new file mode 100644
+index 0000000..6666666
+--- /dev/null
++++ b/app/restoration/page.jsx
+@@ -0,0 +1,36 @@
++"use client";
++import SEOJsonLd from "../../components/SEOJsonLd";
++
++export default function RestorationPage() {
++  const ld = {
++    "@context": "https://schema.org",
++    "@type": "Service",
++    "name": "Реставрация фотографий",
++    "provider": { "@type": "Organization", "name": "AI Memories" },
++    "areaServed": "RU",
++    "url": "https://aimemories.ru/restoration"
++  };
++  return (
++    <main className="container py-12 space-y-6">
++      <h1 className="text-3xl md:text-4xl font-semibold">Реставрация фотографий</h1>
++      <p>Убираю царапины, шум, восстанавливаю детали и цвет. Аккуратно, без «пластика».</p>
++      <p>Срок: 1–2 дня. Формат выдачи — JPEG/PNG, по запросу TIFF.</p>
++      <a className="btn" href="https://wa.me/79841933792">Написать в WhatsApp</a>
++      <SEOJsonLd data={ld} />
++    </main>
++  );
++}
+diff --git a/app/enhance/page.jsx b/app/enhance/page.jsx
+new file mode 100644
+index 0000000..7777777
+--- /dev/null
++++ b/app/enhance/page.jsx
+@@ -0,0 +1,38 @@
++"use client";
++import SEOJsonLd from "../../components/SEOJsonLd";
++
++export default function EnhancePage() {
++  const ld = {
++    "@context": "https://schema.org",
++    "@type": "Service",
++    "name": "Улучшение качества фото",
++    "provider": { "@type": "Organization", "name": "AI Memories" },
++    "areaServed": "RU",
++    "url": "https://aimemories.ru/enhance"
++  };
++  return (
++    <main className="container py-12 space-y-6">
++      <h1 className="text-3xl md:text-4xl font-semibold">Улучшение качества фото</h1>
++      <p>Повышаю резкость, устраняю шум, цветокоррекция и перевод ч/б в цвет.</p>
++      <ul className="list-disc pl-6 text-slate-700">
++        <li>Повышение четкости лиц</li>
++        <li>Коррекция цвета и экспозиции</li>
++        <li>Форматы для печати и соцсетей</li>
++      </ul>
++      <a className="btn" href="https://wa.me/79841933792">Связаться в WhatsApp</a>
++      <SEOJsonLd data={ld} />
++    </main>
++  );
++}
