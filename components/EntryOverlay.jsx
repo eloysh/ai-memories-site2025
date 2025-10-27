@@ -7,6 +7,17 @@ export default function EntryOverlay({ onEnter, audioSrc = "/songs/enter.mp3" })
   const audioRef = useRef(null);
   const [secondsLeft, setSecondsLeft] = useState(5);
 
+  // Если мобильное устройство — сразу пропускаем пользователя (не показываем оверлей)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isTouch = navigator.maxTouchPoints && navigator.maxTouchPoints > 0;
+    const isSmall = window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
+    if (isTouch || isSmall) {
+      // Небольшая отложка, чтобы внешний код успел примонтировать
+      setTimeout(() => onEnter?.(), 0);
+    }
+  }, [onEnter]);
+
   useEffect(() => {
     // Обратный отсчёт и автоматический вход через 5 секунд
     let mounted = true;
